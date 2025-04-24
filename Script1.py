@@ -305,46 +305,7 @@ driver = webdriver.Edge(service=Service(webdriver_path), options=edge_options)
 malicious_urls = []  # List to store user responses for each URL
 reason = []  # List to store reasons for each response
 
-def ask_reason(url):
-    """Custom popup to ask for a reason with a 'Skip' button."""
-    def on_submit():
-        user_reason = reason_entry.get()
-        if user_reason.strip():  # If the user provides a reason
-            reason.append(user_reason)
-        else:  # If the input is empty, add "No reason provided"
-            reason.append("No reason provided")
-        popup.destroy()
 
-    def on_skip():
-        reason.append("N/A")  # Add "N/A" to the reason list
-        popup.destroy()
-#-----------------------------------------------------------------------
-
-    # Create the popup window
-    popup = tk.Tk()
-    popup.title("Reason for Response")
-    popup.geometry("400x200")
-
-    # Add a label and input box
-    label = tk.Label(popup, text=f"Provide a reason for your response to '{url}':")
-    label.pack(pady=10)
-    reason_entry = tk.Entry(popup, width=50)
-    reason_entry.pack(pady=10)
-
-    # Add Submit and Skip buttons
-    def on_submit():
-        user_reason = reason_entry.get()  # Get the entered reason
-        if user_reason.strip():  # If the user provides a reason
-            reason.append(user_reason)
-        else:  # If the input is empty, add "No reason provided"
-            reason.append("No reason provided")
-        popup.destroy()  # Close the popup window
-
-    submit_button = tk.Button(popup, text="Submit", command=on_submit)
-    submit_button.pack(side="left", padx=20, pady=20)
-    skip_button = tk.Button(popup, text="Skip", command=on_skip)
-    skip_button.pack(side="right", padx=20, pady=20)
-    print("Function ran")
 
 
 
@@ -372,16 +333,12 @@ for index, row in suspicious_only_df.iterrows():
     # Map the response to a meaningful value
     if response == "unknown":
         malicious_urls.append("unknown")
-        reason.append("N/A")  # Add "N/A" for unknown responses
     elif response == "no":
         malicious_urls.append("No")
-        reason.append("N/A")  # Add "N/A" for non-malicious URLs
     else:
-        malicious_urls.append("yes")
+        malicious_urls.append(url)  # Append the URL to the list if the user selects "Yes"
         
-        webdriver_path= "Z:\Documents\Suspicious Website Detector\edgedriver_win64\msedgedriver.exe"
-        driver = webdriver.Edge(service=Service(webdriver_path), options=edge_options)
-        driver.implicitly_wait(10)
+
         # Visit Palo Alto Networks URL filtering website
         driver.get("https://urlfiltering.paloaltonetworks.com/")
         # Input the URL into the input box
@@ -419,8 +376,43 @@ for index, row in suspicious_only_df.iterrows():
         )
         print("Submit successful found, Progressing.")
 
-
 driver.quit()
 # Print the malicious URLs list and reasons for verification
 print("Malicious URLs List:", malicious_urls)
 print("Reasons List:", reason)
+
+
+
+#-----------------------------------------------------------------------
+#Popup box asking which excel file to add the malicious results to as new rows
+root = tk.Tk()
+root.withdraw()  # Hide the root window
+response = tk.messagebox.askyesno("Continue to add results to Excel", "Do you want to continue to add the results to an Excel file?")
+
+print("Popup box loaded")
+# If the user chooses to continue, the results will be added to the Excel file.
+if response:
+    # Ask the user to select the Excel file to add the results to
+    excel_file_path = filedialog.askopenfilename(title="Select an Excel file", filetypes=[("Excel files", "*.xlsx")])
+    
+    if excel_file_path:
+        # Load the existing Excel file
+        with pd.ExcelFile(excel_file_path) as xls:
+            # Read the existing data from the first sheet
+            existing_data = pd.read_excel(xls, sheet_name=0)
+        
+        # Create a DataFrame for the new data
+        new_data = pd.DataFrame({
+            'Reported Domain': malicious_urls
+        })
+        
+        # Append the new data to the existing data
+        updated_data = pd.concat([existing_data, new_data], ignore_index=True)
+        
+        # Save the updated data back to the Excel file
+        with pd.ExcelWriter(excel_file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+            updated_data.to_excel(writer, index=False, sheet_name='Reported Domains')
+        
+        print(f"Results have been added to '{excel_file_path}'")
+    else:
+        print("No Excel file selected.")
