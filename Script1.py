@@ -26,7 +26,7 @@ popup_detected = list()
 suspicious_flag = list()
 ip_address_list = list()
 IPDB_reputation = list()
-
+non_malicious_domains = list()
 IPDB_response = pd.DataFrame()
 #-----------------------------------------------------------------------
 
@@ -306,9 +306,6 @@ malicious_urls = []  # List to store user responses for each URL
 reason = []  # List to store reasons for each response
 
 
-
-
-
 for index, row in suspicious_only_df.iterrows():
     url = f"https://{row['URL Domain']}"  # Ensure the URL is properly formatted
 
@@ -320,6 +317,8 @@ for index, row in suspicious_only_df.iterrows():
     print(f"Page loaded successfully for {url}")
     driver.implicitly_wait(10)
     print("Wait passed...")
+
+    # Create a new Tkinter root window for each iteration
     root = tk.Tk()
     root.withdraw()  # Hide the root window
     response = tk.messagebox.askquestion(
@@ -328,6 +327,7 @@ for index, row in suspicious_only_df.iterrows():
         icon='question',
         type='yesnocancel'
     )
+    root.destroy()  # Destroy the root window after the popup is closed
     print("Popup box loaded")
 
     # Map the response to a meaningful value
@@ -335,15 +335,15 @@ for index, row in suspicious_only_df.iterrows():
         malicious_urls.append("unknown")
     elif response == "no":
         malicious_urls.append("No")
+        non_malicious_domains.append(url)  # Append the URL to the list if the user selects "No"
     else:
         malicious_urls.append(url)  # Append the URL to the list if the user selects "Yes"
-        
 
         # Visit Palo Alto Networks URL filtering website
         driver.get("https://urlfiltering.paloaltonetworks.com/")
         # Input the URL into the input box
         input_box = WebDriverWait(driver, 15).until(
-        EC.presence_of_element_located((By.ID, "id_url"))
+            EC.presence_of_element_located((By.ID, "id_url"))
         )
         print("Element found")
 
@@ -382,7 +382,7 @@ print("Malicious URLs List:", malicious_urls)
 print("Reasons List:", reason)
 
 
-
+#Saving Data to file
 #-----------------------------------------------------------------------
 #Popup box asking which excel file to add the malicious results to as new rows
 root = tk.Tk()
@@ -415,4 +415,14 @@ if response:
         
         print(f"Results have been added to '{excel_file_path}'")
     else:
-        print("No Excel file selected.")
+        print("No Excel file selected.") 
+
+#Keeping a how many times individual source users have visited malicious URLs persisting over multiple runs
+filtered_df2 = df[df['URL Domain'].isin(malicious_urls)]
+print("Printing filtered_df")
+print(filtered_df2.head())
+# Removing duplicates from the filtered dataframe based on 'URL Domain' and 'Source User'
+# This will keep only the first occurrence of each unique combination of 'URL Domain' and 'Source User'
+filtered_df2_uniques = filtered_df2.drop_duplicates(subset=['URL Domain', 'Source User'])
+print("Printing filtered_df_uniques")
+print(filtered_df2_uniques.head())
