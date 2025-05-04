@@ -25,3 +25,8 @@ Disclaimers
 3.  his script MUST BE RUN IN A SANDBOX. 
 4.  here is NO API option for Palo Alto's URL submission process so this has to be run via web driver. There are 2x CAPTCHA's which must be completed per positive result. 
 
+Prisma search script:
+
+url_domain LIKE '%.xyz' OR url_domain LIKE '%.top' OR url_domain LIKE '%.tk' OR url_domain LIKE '%.ru' OR url_domain LIKE '%.club' OR url_domain LIKE '%.tio' OR url_domain LIKE '%.site' OR url_domain LIKE '%.cfd'  OR URL Domain LIKE 'drop.%' OR URL Domain LIKE 'cast.%' OR URL Domain LIKE 'grt.%' OR url_domain LIKE '%.sh' OR url_domain LIKE "%cast." OR url_domain LIKE "%drop." OR url_domain LIKE "grt."
+
+Update 04/05/25 - Added .sh to TLD search. Added cast. grt. and drop. to search for fake search engines. (see https://github.com/PaloAltoNetworks/Unit42-timely-threat-intel/blob/main/2025-05-02-IOCs-for-Unknown-Loader.txt)
