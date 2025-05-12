@@ -400,17 +400,19 @@ if response:
         with pd.ExcelFile(excel_file_path) as xls:
             # Read the existing data from the first sheet
             existing_data = pd.read_excel(xls, sheet_name=0)
-        
+        # Remove specific strings from the malicious_urls list
+        strings_to_remove = ["unknown", "No"]
+        malicious_urls = [url for url in malicious_urls if url not in strings_to_remove]
         # Create a DataFrame for the new data
         new_data = pd.DataFrame({
-            'Reported Domain': malicious_urls
+            'Reported Domains': malicious_urls
         })
         
         # Append the new data to the existing data
         updated_data = pd.concat([existing_data, new_data], ignore_index=True)
         
         # Save the updated data back to the Excel file
-        with pd.ExcelWriter(excel_file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+        with pd.ExcelWriter(excel_file_path, engine='openpyxl') as writer:
             updated_data.to_excel(writer, index=False, sheet_name='Reported Domains')
         
         print(f"Results have been added to '{excel_file_path}'")
