@@ -29,6 +29,7 @@ IPDB_reputation = list()
 non_malicious_domains = list()
 IPDB_response = pd.DataFrame()
 #-----------------------------------------------------------------------
+#-------------PART ONE - INITIAL SETUP AND IMPORTS----------------------
 
 def select_file():
     root = tk.Tk()
@@ -77,6 +78,9 @@ print("Unique Alert Domains:", unique_alert_domains)
 #Function to check domain reputation using VirusTotal. NOTE this is a free API and limits to 4 requests per minute and 500 per day. To come...
 print("VirusTotal not yet built in. Skipping")
 
+#-----------------------------------------------------------------------
+#----------PART TWO - BS4 ANALYSIS--------------------------------------
+#-----------------------------------------------------------------------
 print("BeautifulSoup4 content check")
 
 
@@ -307,74 +311,82 @@ reason = []  # List to store reasons for each response
 
 
 for index, row in suspicious_only_df.iterrows():
-    url = f"https://{row['URL Domain']}"  # Ensure the URL is properly formatted
+    try:
+        url = f"https://{row['URL Domain']}"  # Ensure the URL is properly formatted
 
-    edge_options = Options()
-    edge_options.add_argument("--start-maximized")  # Start browser maximized
-    edge_options.add_argument("--disable-extensions")  # Disable extensions
+        edge_options = Options()
+        edge_options.add_argument("--start-maximized")  # Start browser maximized
+        edge_options.add_argument("--disable-extensions")  # Disable extensions
 
-    driver.get(url)
-    print(f"Page loaded successfully for {url}")
-    driver.implicitly_wait(10)
-    print("Wait passed...")
+        driver.get(url)
+        print(f"Page loaded successfully for {url}")
+        driver.implicitly_wait(10)
+        print("Wait passed...")
 
-    # Create a new Tkinter root window for each iteration
-    root = tk.Tk()
-    root.withdraw()  # Hide the root window
-    response = tk.messagebox.askquestion(
-        "Website Malicious Check",
-        f"Is the website '{url}' malicious?",
-        icon='question',
-        type='yesnocancel'
-    )
-    root.destroy()  # Destroy the root window after the popup is closed
-    print("Popup box loaded")
-
-    # Map the response to a meaningful value
-    if response == "unknown":
-        malicious_urls.append("unknown")
-    elif response == "no":
-        malicious_urls.append("No")
-        non_malicious_domains.append(url)  # Append the URL to the list if the user selects "No"
-    else:
-        malicious_urls.append(url)  # Append the URL to the list if the user selects "Yes"
-
-        # Visit Palo Alto Networks URL filtering website
-        driver.get("https://urlfiltering.paloaltonetworks.com/")
-        # Input the URL into the input box
-        input_box = WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.ID, "id_url"))
+        # Create a new Tkinter root window for each iteration
+        root = tk.Tk()
+        root.withdraw()  # Hide the root window
+        response = tk.messagebox.askquestion(
+            "Website Malicious Check",
+            f"Is the website '{url}' malicious?",
+            icon='question',
+            type='yesnocancel'
         )
-        print("Element found")
+        root.destroy()  # Destroy the root window after the popup is closed
+        print("Popup box loaded")
 
-        input_box.clear()
-        print("Element cleared")
-        input_box.send_keys(url)
-        print(f"Entered URL '{url}' into the input box.")
+        # Map the response to a meaningful value
+        if response == "unknown":
+            malicious_urls.append("unknown")
+        elif response == "no":
+            malicious_urls.append("No")
+            non_malicious_domains.append(url)  # Append the URL to the list if the user selects "No"
+        else:
+            malicious_urls.append(url)  # Append the URL to the list if the user selects "Yes"
 
-        email_field = WebDriverWait(driver, 130).until(
-            EC.presence_of_element_located((By.ID, "id_your_email"))
-        )
-        print("Email field found")
-        email_field.clear()
-        email_field.send_keys(email_address)  # Use the email address entered by the user
-        print(f"Entered email address '{email_address}' into the email field.")
+            try:
+                # Visit Palo Alto Networks URL filtering website
+                driver.get("https://urlfiltering.paloaltonetworks.com/")
+                # Input the URL into the input box
+                input_box = WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located((By.ID, "id_url"))
+                )
+                print("Element found")
 
-        email_confirm_field = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.ID, "id_confirm_email"))
-        )
-        email_confirm_field.clear()
-        email_confirm_field.send_keys(email_address)  # Use the email address entered by the user
-        print(f"Entered email address '{email_address}' into the email confirmation field.")
+                input_box.clear()
+                print("Element cleared")
+                input_box.send_keys(url)
+                print(f"Entered URL '{url}' into the input box.")
 
-        actioned_urls = []  # List to store actioned URLs
-        actioned_urls.append(url)  # Append the URL to the list
-        print(actioned_urls)
+                email_field = WebDriverWait(driver, 130).until(
+                    EC.presence_of_element_located((By.ID, "id_your_email"))
+                )
+                print("Email field found")
+                email_field.clear()
+                email_field.send_keys(email_address)  # Use the email address entered by the user
+                print(f"Entered email address '{email_address}' into the email field.")
 
-        email_field = WebDriverWait(driver, 60).until(
-            EC.presence_of_element_located((By.ID, "progress_message"))
-        )
-        print("Submit successful found, Progressing.")
+                email_confirm_field = WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located((By.ID, "id_confirm_email"))
+                )
+                email_confirm_field.clear()
+                email_confirm_field.send_keys(email_address)  # Use the email address entered by the user
+                print(f"Entered email address '{email_address}' into the email confirmation field.")
+
+                actioned_urls = []  # List to store actioned URLs
+                actioned_urls.append(url)  # Append the URL to the list
+                print(actioned_urls)
+
+                email_field = WebDriverWait(driver, 60).until(
+                    EC.presence_of_element_located((By.ID, "progress_message"))
+                )
+                print("Submit successful found, Progressing.")
+            except Exception as e:
+                print(f"An error occurred during Palo Alto Networks URL filtering automation for {url}: {e}")
+
+    except Exception as e:
+        print(f"An error occurred while processing {row['URL Domain']}: {e}")
+
 
 driver.quit()
 # Print the malicious URLs list and reasons for verification
